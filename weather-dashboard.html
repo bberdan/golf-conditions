@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>London, ON — Weather</title>
-<link rel="apple-touch-icon" href="icon.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -44,7 +43,13 @@
   #status { padding: 40px 24px; text-align: center; color: var(--muted); font-size: 0.75rem; letter-spacing: 2px; }
   .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .radar-section { border-top: 2px solid var(--border); background: var(--panel); flex-shrink: 0; }
+  
+  /* Tee Time Button Styles */
+  .action-section { padding: 24px; display: flex; justify-content: center; background: var(--panel); border-top: 2px solid var(--border); }
+  .book-btn { display: inline-flex; align-items: center; gap: 10px; background: rgba(0,229,192,0.1); border: 1px solid var(--accent2); color: var(--accent2); text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 2px; padding: 12px 32px; border-radius: 6px; transition: all 0.2s; }
+  .book-btn:hover { background: var(--accent2); color: #000; }
+  
+  .radar-section { border-top: 1px solid var(--border); background: var(--panel); flex-shrink: 0; }
   .radar-header { padding: 8px 24px; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 3px; color: var(--accent3); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
   .blink { width: 8px; height: 8px; background: var(--accent3); border-radius: 50%; animation: blink 1.5s ease-in-out infinite; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
@@ -74,6 +79,10 @@
   <div id="status"><span class="spinner"></span>FETCHING FORECAST DATA…</div>
 </div>
 
+<div class="action-section">
+  <a href="https://tarandowah-golfers-club.book.teeitup.com/" target="_blank" class="book-btn">⛳ BOOK TEE TIMES</a>
+</div>
+
 <div class="radar-section">
   <div class="radar-header">
     <div class="blink"></div>
@@ -93,8 +102,20 @@ const WMO_DESC = {0:'Clear',1:'Mostly Clear',2:'Partly Cloudy',3:'Overcast',45:'
 function degToCardinal(d){const a=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];return a[Math.round(d/22.5)%16];}
 function tempClass(t){if(t<0)return't-cold';if(t<10)return't-cool';if(t<20)return't-mild';if(t<28)return't-warm';return't-hot';}
 function fmtHour(s){const d=new Date(s);let h=d.getHours();const p=h>=12?'PM':'AM';h=h%12||12;return`${h}${p}`;}
-function dayLabel(s){const d=new Date(s+'T12:00:00'),t=new Date();const diff=Math.round((d-new Date(t.getFullYear(),t.getMonth(),t.getDate()))/86400000);if(diff===0)return'TODAY';if(diff===1)return'TOMORROW';return d.toLocaleDateString('en-CA',{weekday:'long'}).toUpperCase();}
-function dayDate(s){return new Date(s+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});}
+
+// Fixed Date Logic: Set forecast string to local midnight before comparing to actual local midnight
+function dayLabel(s){
+  const d = new Date(s + 'T00:00:00'); 
+  const t = new Date();
+  const diff = Math.round((d - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 86400000);
+  if(diff === 0) return 'TODAY';
+  if(diff === 1) return 'TOMORROW';
+  return d.toLocaleDateString('en-CA',{weekday:'long'}).toUpperCase();
+}
+
+function dayDate(s){
+  return new Date(s + 'T00:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});
+}
 
 async function fetchWeather() {
   const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&hourly=temperature_2m,precipitation_probability,precipitation,weathercode,windspeed_10m,winddirection_10m&daily=sunrise,sunset&timezone=America%2FToronto&forecast_days=8`;
