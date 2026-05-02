@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>London, ON — Weather</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e14; --panel: #0f1520; --border: #1e2d45;
+    --accent: #3b9eff; --accent2: #00e5c0; --accent3: #ff6b35;
+    --rain: #5b9bd5; --wind: #a8d8a8; --text: #c8d8e8; --muted: #4a6080;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 18px 24px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: 18px; background: linear-gradient(180deg, #0d1520 0%, var(--bg) 100%); flex-wrap: wrap; }
+  header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; letter-spacing: 3px; color: var(--accent); line-height: 1; }
+  header .subtitle { font-size: 0.72rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  header .updated { margin-left: auto; font-size: 0.68rem; color: var(--muted); }
+  .legend { display: flex; gap: 20px; padding: 8px 24px; border-bottom: 1px solid var(--border); background: var(--panel); flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .forecast-container { flex: 1; }
+  .day-block { border-bottom: 1px solid var(--border); }
+  .day-header { padding: 8px 24px; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 3px; color: var(--accent2); background: rgba(0,229,192,0.04); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .day-date { font-size: 0.68rem; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 2px; font-weight: 300; }
+  .hours-row { display: flex; overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .hour-card { min-width: 88px; flex-shrink: 0; padding: 10px 6px 12px; border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 5px; transition: background 0.15s; position: relative; }
+  .hour-card:hover { background: rgba(59,158,255,0.06); }
+  .hour-card.current { background: rgba(59,158,255,0.1); }
+  .hour-card.current::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); }
+  .hour-time { font-size: 0.68rem; color: var(--muted); letter-spacing: 1px; }
+  .hour-icon { font-size: 1.5rem; line-height: 1; margin: 2px 0; }
+  .hour-temp { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 1px; color: var(--text); line-height: 1; }
+  .hour-temp span { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); }
+  .hour-rain { display: flex; align-items: center; gap: 3px; font-size: 0.62rem; color: var(--rain); }
+  .rain-bar-container { width: 54px; height: 4px; background: rgba(91,155,213,0.15); border-radius: 2px; overflow: hidden; }
+  .rain-bar { height: 100%; background: var(--rain); border-radius: 2px; }
+  .hour-wind { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .wind-speed { font-size: 0.62rem; color: var(--wind); }
+  .wind-arrow { display: inline-block; font-size: 0.9rem; color: var(--accent3); line-height: 1; }
+  .wind-dir { font-size: 0.58rem; color: var(--muted); letter-spacing: 1px; }
+  #status { padding: 40px 24px; text-align: center; color: var(--muted); font-size: 0.75rem; letter-spacing: 2px; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .radar-section { border-top: 2px solid var(--border); background: var(--panel); flex-shrink: 0; }
+  .radar-header { padding: 8px 24px; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 3px; color: var(--accent3); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .blink { width: 8px; height: 8px; background: var(--accent3); border-radius: 50%; animation: blink 1.5s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  .radar-frame { width: 100%; height: 380px; border: none; display: block; background: #000; }
+  .error-msg { color: #ff6b6b; font-size: 0.72rem; letter-spacing: 1px; line-height: 1.8; }
+  .retry-btn { margin-top: 12px; padding: 8px 20px; background: transparent; border: 1px solid var(--accent); color: var(--accent); font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; display: inline-block; }
+  .retry-btn:hover { background: rgba(59,158,255,0.1); }
+  .t-cold{color:#7ec8e3} .t-cool{color:#a8d8a8} .t-mild{color:#f0e68c} .t-warm{color:#ffa07a} .t-hot{color:#ff6b35}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>LONDON <span style="color:var(--muted);font-size:1.2rem">·</span> ON</h1>
+  <span class="subtitle">8-Day Daylight Hourly Forecast</span>
+  <span class="updated" id="updated-time"></span>
+</header>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--rain)"></div>Precip chance</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--wind)"></div>Wind km/h</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent3)"></div>Wind direction ↑</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Current hour</div>
+</div>
+
+<div class="forecast-container" id="forecast">
+  <div id="status"><span class="spinner"></span>FETCHING FORECAST DATA…</div>
+</div>
+
+<div class="radar-section">
+  <div class="radar-header">
+    <div class="blink"></div>
+    LIVE RADAR — SOUTHERN ONTARIO
+  </div>
+  <iframe class="radar-frame"
+    src="https://weather.gc.ca/?layers=,radar&center=43.09495266,-80.70597244&zoom=6"
+    title="Environment Canada Radar" loading="lazy"></iframe>
+</div>
+
+<script>
+const LAT = 42.9633, LON = -81.2508;
+
+const WMO_ICONS = {0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'❄️',77:'🌨',80:'🌦',81:'🌧',82:'⛈',85:'🌨',86:'❄️',95:'⛈',96:'⛈',99:'⛈'};
+const WMO_DESC = {0:'Clear',1:'Mostly Clear',2:'Partly Cloudy',3:'Overcast',45:'Fog',48:'Icy Fog',51:'Light Drizzle',53:'Drizzle',55:'Heavy Drizzle',61:'Light Rain',63:'Rain',65:'Heavy Rain',71:'Light Snow',73:'Snow',75:'Heavy Snow',77:'Snow Grains',80:'Showers',81:'Heavy Showers',82:'Violent Showers',85:'Snow Showers',86:'Heavy Snow Showers',95:'Thunderstorm',96:'Thunderstorm+Hail',99:'Heavy Thunderstorm'};
+
+function degToCardinal(d){const a=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];return a[Math.round(d/22.5)%16];}
+function tempClass(t){if(t<0)return't-cold';if(t<10)return't-cool';if(t<20)return't-mild';if(t<28)return't-warm';return't-hot';}
+function fmtHour(s){const d=new Date(s);let h=d.getHours();const p=h>=12?'PM':'AM';h=h%12||12;return`${h}${p}`;}
+function dayLabel(s){const d=new Date(s+'T12:00:00'),t=new Date();const diff=Math.round((d-new Date(t.getFullYear(),t.getMonth(),t.getDate()))/86400000);if(diff===0)return'TODAY';if(diff===1)return'TOMORROW';return d.toLocaleDateString('en-CA',{weekday:'long'}).toUpperCase();}
+function dayDate(s){return new Date(s+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});}
+
+async function fetchWeather() {
+  const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&hourly=temperature_2m,precipitation_probability,precipitation,weathercode,windspeed_10m,winddirection_10m&daily=sunrise,sunset&timezone=America%2FToronto&forecast_days=8`;
+
+  const response = await fetch(apiUrl);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
+
+function render(data) {
+  const {hourly, daily} = data;
+  const now = new Date();
+
+  const sunMap = {};
+  daily.time.forEach((d,i) => {
+    sunMap[d] = {rise: new Date(daily.sunrise[i]), set: new Date(daily.sunset[i])};
+  });
+
+  const days = {};
+  hourly.time.forEach((t,i) => {
+    const ds = t.slice(0,10);
+    if(!days[ds]) days[ds]=[];
+    days[ds].push({dt:new Date(t), t,
+      temp:hourly.temperature_2m[i],
+      precip_prob:hourly.precipitation_probability[i],
+      wcode:hourly.weathercode[i],
+      wind:hourly.windspeed_10m[i],
+      winddir:hourly.winddirection_10m[i]
+    });
+  });
+
+  const fc = document.getElementById('forecast');
+  fc.innerHTML = '';
+  const nowTs = now.getTime();
+
+  Object.entries(days).forEach(([ds, hours]) => {
+    const sun = sunMap[ds];
+    if(!sun) return;
+    const dl = hours.filter(h => h.dt >= sun.rise && h.dt <= sun.set);
+    if(!dl.length) return;
+
+    const block = document.createElement('div');
+    block.className = 'day-block';
+    block.innerHTML = `
+      <div class="day-header">
+        <span>${dayLabel(ds)}</span>
+        <span class="day-date">${dayDate(ds)}</span>
+        <span class="day-date" style="margin-left:auto">🌅 ${sun.rise.toLocaleTimeString('en-CA',{hour:'numeric',minute:'2-digit'})} &nbsp; 🌇 ${sun.set.toLocaleTimeString('en-CA',{hour:'numeric',minute:'2-digit'})}</span>
+      </div>
+      <div class="hours-row" id="row-${ds}"></div>`;
+    fc.appendChild(block);
+
+    const row = block.querySelector(`#row-${ds}`);
+    dl.forEach(h => {
+      const isNow = Math.abs(h.dt.getTime()-nowTs) < 1800000;
+      const c = document.createElement('div');
+      c.className = 'hour-card'+(isNow?' current':'');
+      const prob = h.precip_prob??0;
+      c.innerHTML = `
+        <div class="hour-time">${fmtHour(h.t)}</div>
+        <div class="hour-icon" title="${WMO_DESC[h.wcode]||''}">${WMO_ICONS[h.wcode]||'🌡'}</div>
+        <div class="hour-temp ${tempClass(h.temp)}">${Math.round(h.temp)}<span>°C</span></div>
+        <div class="hour-rain">💧 ${prob}%</div>
+        <div class="rain-bar-container"><div class="rain-bar" style="width:${Math.min(100,prob)}%"></div></div>
+        <div class="hour-wind">
+          <div class="wind-speed">💨 ${Math.round(h.wind)}</div>
+          <div class="wind-arrow" style="transform:rotate(${h.winddir??0}deg)" title="${Math.round(h.winddir??0)}°">↑</div>
+          <div class="wind-dir">${degToCardinal(h.winddir??0)}</div>
+        </div>`;
+      row.appendChild(c);
+    });
+  });
+
+  document.getElementById('updated-time').textContent =
+    'Updated ' + now.toLocaleTimeString('en-CA',{hour:'numeric',minute:'2-digit'});
+}
+
+async function init() {
+  document.getElementById('forecast').innerHTML = '<div id="status"><span class="spinner"></span>FETCHING FORECAST DATA…</div>';
+  try {
+    const data = await fetchWeather();
+    render(data);
+  } catch(e) {
+    document.getElementById('forecast').innerHTML = `
+      <div id="status">
+        <div class="error-msg">⚠ Could not load forecast<br><small style="color:var(--muted)">${e.message}</small></div>
+        <br><button class="retry-btn" onclick="init()">↺ RETRY</button>
+      </div>`;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
