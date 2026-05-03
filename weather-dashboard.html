@@ -55,7 +55,10 @@
   .radar-header { padding: 8px 24px; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 3px; color: var(--accent3); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
   .blink { width: 8px; height: 8px; background: var(--accent3); border-radius: 50%; animation: blink 1.5s ease-in-out infinite; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-  .radar-frame { width: 100%; height: 380px; border: none; display: block; background: #000; }
+  
+  /* Radar height updated to 75 Viewport Height (75vh) */
+  .radar-frame { width: 100%; height: 75vh; border: none; display: block; background: #000; }
+  
   .error-msg { color: #ff6b6b; font-size: 0.72rem; letter-spacing: 1px; line-height: 1.8; }
   .retry-btn { margin-top: 12px; padding: 8px 20px; background: transparent; border: 1px solid var(--accent); color: var(--accent); font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; display: inline-block; }
   .retry-btn:hover { background: rgba(59,158,255,0.1); }
